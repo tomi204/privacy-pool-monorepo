@@ -11,8 +11,11 @@ import "solidity-coverage";
 
 import "./tasks/accounts";
 import "./tasks/FHECounter";
-
-// Run 'npx hardhat vars setup' to see the list of variables that need to be set
+import "./tasks/pool.deposit0";
+import "./tasks/pool.deposit1";
+import "./tasks/pool.provide";
+import "./tasks/pool.init";
+import "./tasks/verify.all";
 
 const MNEMONIC: string = vars.get("MNEMONIC", "test test test test test test test test test test test junk");
 const INFURA_API_KEY: string = vars.get("INFURA_API_KEY", "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz");
@@ -78,6 +81,8 @@ const config: HardhatUserConfig = {
         enabled: true,
         runs: 800,
       },
+      viaIR: true,
+
       evmVersion: "cancun",
     },
   },

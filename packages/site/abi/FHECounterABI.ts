@@ -1,4 +1,3 @@
-
 /*
   This file is auto-generated.
   By commands: 'npx hardhat deploy' or 'npx hardhat node'
@@ -69,4 +68,3 @@ export const FHECounterABI = {
     }
   ]
 } as const;
-

@@ -1,20 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
 
-/* ************************************************************************** *
-
-The purpose of the functions below is:
-
-1. to parse:
-  - <root>/packages/<contracts dir>/deployments/localhost/FHECounter.json
-  - <root>/packages/<contracts dir>/deployments/sepolia/FHECounter.json
-
-2. generate:
-  - <root>/packages/site/abi/FHECounterABI.ts
-  - <root>/packages/site/abi/FHECounterAddresses.ts
-
-* ************************************************************************** */
-
 type DeploymentInfo =
   | {
       abiJson: undefined;
@@ -29,16 +15,32 @@ type DeploymentInfo =
       chainName: string;
     };
 
-/// Parse <root>/packages/<contracts dir>/deployments/<chainName>/<contractName>.json
+// --- Helpers ---------------------------------------------------------------
+
+function deploymentFilePath(
+  deploymentsDir: string,
+  chainName: string,
+  contractName: string
+) {
+  const dir = path.join(deploymentsDir, chainName);
+  const file = path.join(dir, `${contractName}.json`);
+  return { dir, file };
+}
+
+/// Lee deployments/<chain>/<contract>.json si existe; si no, devuelve “vacío”
 function readDeployment(
   chainName: string,
   chainId: number,
   contractName: string,
   deploymentsDir: string
 ): DeploymentInfo {
-  const chainDeploymentDir = path.join(deploymentsDir, chainName);
+  const { dir, file } = deploymentFilePath(
+    deploymentsDir,
+    chainName,
+    contractName
+  );
 
-  if (!fs.existsSync(chainDeploymentDir)) {
+  if (!fs.existsSync(dir) || !fs.existsSync(file)) {
     return {
       abiJson: undefined,
       address: "0x0000000000000000000000000000000000000000",
@@ -47,13 +49,7 @@ function readDeployment(
     };
   }
 
-  const jsonString = fs.readFileSync(
-    path.join(chainDeploymentDir, `${contractName}.json`),
-    "utf-8"
-  );
-
-  const obj = JSON.parse(jsonString);
-
+  const obj = JSON.parse(fs.readFileSync(file, "utf-8"));
   return {
     abiJson: JSON.stringify({ abi: obj.abi }, null, 2),
     address: obj.address as `0x{string}`,
@@ -62,25 +58,21 @@ function readDeployment(
   };
 }
 
-/// Generates FHECounterABI.ts + FHECounterAddress.ts
 function saveDeployments(
-  abiJson: string | undefined,
+  abiJson: string,
   contractName: string,
   outputDir: string,
   sepoliaDeployment: DeploymentInfo,
   localhostDeployment: DeploymentInfo
 ) {
-  if (!abiJson) {
-    throw new Error("Null ABI!");
-  }
-
   const tsCode = `
 /*
   This file is auto-generated.
   By commands: 'npx hardhat deploy' or 'npx hardhat node'
 */
 export const ${contractName}ABI = ${abiJson} as const;
-\n`;
+`.trimStart();
+
   const tsAddresses = `
 /*
   This file is auto-generated.
@@ -88,22 +80,11 @@ export const ${contractName}ABI = ${abiJson} as const;
 */
 export const ${contractName}Addresses = { 
   "${sepoliaDeployment.chainId}": { address: "${sepoliaDeployment.address}", chainId: ${sepoliaDeployment.chainId}, chainName: "sepolia" },
-  "${localhostDeployment.chainId}": { address: "${localhostDeployment.address}", chainId: ${localhostDeployment.chainId}, chainName: "hardhat" },
+  "${localhostDeployment.chainId}": { address: "${localhostDeployment.address}", chainId: ${localhostDeployment.chainId}, chainName: "hardhat" }
 };
-`;
+`.trimStart();
 
-  console.log(`✅ Generated ${path.join(outputDir, `${contractName}ABI.ts`)}`);
-  console.log(
-    `✅ Generated ${path.join(outputDir, `${contractName}Addresses.ts`)}`
-  );
-  console.log(`✅ Localhost address: ${localhostDeployment.address}`);
-  console.log(`✅ Sepolia address: ${sepoliaDeployment.address}`);
-  //console.log(tsAddresses);
-
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir);
-  }
-
+  fs.mkdirSync(outputDir, { recursive: true });
   fs.writeFileSync(
     path.join(outputDir, `${contractName}ABI.ts`),
     tsCode,
@@ -114,6 +95,13 @@ export const ${contractName}Addresses = {
     tsAddresses,
     "utf-8"
   );
+
+  console.log(`✅ Generated ${path.join(outputDir, `${contractName}ABI.ts`)}`);
+  console.log(
+    `✅ Generated ${path.join(outputDir, `${contractName}Addresses.ts`)}`
+  );
+  console.log(`✅ Localhost address: ${localhostDeployment.address}`);
+  console.log(`✅ Sepolia address: ${sepoliaDeployment.address}`);
 }
 
 function resetIfNeeded(
@@ -131,44 +119,58 @@ function resetIfNeeded(
   return dep;
 }
 
+// --- Entry point -----------------------------------------------------------
+
 export function postDeploy(chainName: string, contractName: string) {
-  // chainName === localhost when `npx hardhat deploy --network localhost`
-  // chainName === hardhat when `npx hardhat deploy` or `npx hardhat node`
-  // chainName === sepolia when `npx hardhat deploy --network sepolia`
+  // Soportadas por tu flujo actual
   if (
     chainName !== "sepolia" &&
     chainName !== "localhost" &&
     chainName !== "hardhat"
-  ) {
+  )
     return;
-  }
+
+  const deploymentsDir = path.resolve("./deployments");
+
   let localhostDeployment = readDeployment(
     "localhost",
     31337,
     contractName,
-    path.resolve("./deployments")
+    deploymentsDir
   );
   let sepoliaDeployment = readDeployment(
     "sepolia",
     11155111,
     contractName,
-    path.resolve("./deployments")
+    deploymentsDir
   );
 
-  // Use the target chain as the ABI reference
-  const referenceABIJson =
-    chainName === localhostDeployment.chainName || chainName === "hardhat"
-      ? localhostDeployment.abiJson
-      : sepoliaDeployment.abiJson;
+  // ABI de referencia: preferí la red objetivo; si no hay, fallback a la otra
+  const targetIsLocal = chainName === "localhost" || chainName === "hardhat";
+  let referenceABIJson = targetIsLocal
+    ? localhostDeployment.abiJson
+    : sepoliaDeployment.abiJson;
+  if (!referenceABIJson)
+    referenceABIJson = targetIsLocal
+      ? sepoliaDeployment.abiJson
+      : localhostDeployment.abiJson;
 
-  // Reset if ABI differs from reference ABI
+  if (!referenceABIJson) {
+    throw new Error(
+      `No ABI found for ${contractName}. Looked in sepolia and localhost. Did you deploy it?`
+    );
+  }
+
+  // Normalizá si alguna side-network trae ABI distinto
   sepoliaDeployment = resetIfNeeded(sepoliaDeployment, referenceABIJson);
   localhostDeployment = resetIfNeeded(localhostDeployment, referenceABIJson);
 
+  // Salida al front
+  const outputDir = path.resolve("../site/abi");
   saveDeployments(
     referenceABIJson,
     contractName,
-    path.resolve("../site/abi"),
+    outputDir,
     sepoliaDeployment,
     localhostDeployment
   );
