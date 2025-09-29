@@ -2,9 +2,11 @@
 
 import { useFhevm } from "@fhevm/react";
 import { useInMemoryStorage } from "../hooks/useInMemoryStorage";
-import { useMetaMaskEthersSigner } from "../hooks/metamask/useMetaMaskEthersSigner";
+import { useReownEthersSigner } from "../hooks/useReownEthersSigner";
 import { useFHECounter } from "../hooks/useFHECounter";
 import { errorNotDeployed } from "./ErrorNotDeployed";
+import { ConnectButton } from "./wallet-connect/ConnectButton";
+import { Eip1193Provider } from "ethers";
 
 /*
  * Main FHECounter React component with 3 buttons
@@ -15,17 +17,15 @@ import { errorNotDeployed } from "./ErrorNotDeployed";
 export const FHECounterDemo = () => {
   const { storage: fhevmDecryptionSignatureStorage } = useInMemoryStorage();
   const {
-    provider,
-    chainId,
-    accounts,
-    isConnected,
-    connect,
     ethersSigner,
     ethersReadonlyProvider,
-    sameChain,
-    sameSigner,
+    provider,
     initialMockChains,
-  } = useMetaMaskEthersSigner();
+    isConnected,
+    chainId,
+    accounts,
+  } = useReownEthersSigner();
+  const address = accounts?.[0];
 
   //////////////////////////////////////////////////////////////////////////////
   // FHEVM instance
@@ -36,8 +36,8 @@ export const FHECounterDemo = () => {
     status: fhevmStatus,
     error: fhevmError,
   } = useFhevm({
-    provider,
-    chainId,
+    provider: provider as Eip1193Provider,
+    chainId: chainId as number,
     initialMockChains,
     enabled: true, // use enabled to dynamically create the instance on-demand
   });
@@ -52,12 +52,12 @@ export const FHECounterDemo = () => {
   const fheCounter = useFHECounter({
     instance: fhevmInstance,
     fhevmDecryptionSignatureStorage, // is global, could be invoked directly in useFHECounter hook
-    eip1193Provider: provider,
-    chainId,
+    eip1193Provider: provider as Eip1193Provider,
+    chainId: chainId as number,
     ethersSigner,
     ethersReadonlyProvider,
-    sameChain,
-    sameSigner,
+    sameChain: { current: () => true },
+    sameSigner: { current: () => true },
   });
 
   //////////////////////////////////////////////////////////////////////////////
@@ -80,20 +80,14 @@ export const FHECounterDemo = () => {
 
   if (!isConnected) {
     return (
-      <div className="mx-auto">
-        <button
-          className={buttonClass}
-          disabled={isConnected}
-          onClick={connect}
-        >
-          <span className="text-4xl p-6">Connect to MetaMask</span>
-        </button>
+      <div className="mx-auto max-w-md flex justify-center">
+        <ConnectButton />
       </div>
     );
   }
 
   if (fheCounter.isDeployed === false) {
-    return errorNotDeployed(chainId);
+    return errorNotDeployed(chainId as number);
   }
 
   return (
@@ -110,12 +104,8 @@ export const FHECounterDemo = () => {
         <p className={titleClass}>Chain Infos</p>
         {printProperty("ChainId", chainId)}
         {printProperty(
-          "Metamask accounts",
-          accounts
-            ? accounts.length === 0
-              ? "No accounts"
-              : `{ length: ${accounts.length}, [${accounts[0]}, ...] }`
-            : "undefined"
+          "accounts",
+          address ? `{ length: 1, [${address}] }` : "undefined"
         )}
         {printProperty(
           "Signer",

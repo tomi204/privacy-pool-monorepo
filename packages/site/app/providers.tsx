@@ -2,9 +2,9 @@
 
 import type { ReactNode } from "react";
 
-import { MetaMaskProvider } from "@/hooks/metamask/useMetaMaskProvider";
 import { InMemoryStorageProvider } from "@/hooks/useInMemoryStorage";
-import { MetaMaskEthersSignerProvider } from "@/hooks/metamask/useMetaMaskEthersSigner";
+import { ReownEthersSignerProvider } from "@/hooks/useReownEthersSigner";
+import { AppKit } from "./Reown";
 
 type Props = {
   children: ReactNode;
@@ -12,10 +12,12 @@ type Props = {
 
 export function Providers({ children }: Props) {
   return (
-    <MetaMaskProvider>
-      <MetaMaskEthersSignerProvider initialMockChains={{ 31337: "http://localhost:8545" }}>
+    <AppKit>
+      <ReownEthersSignerProvider
+        initialMockChains={{ 31337: "http://localhost:8545" }}
+      >
         <InMemoryStorageProvider>{children}</InMemoryStorageProvider>
-      </MetaMaskEthersSignerProvider>
-    </MetaMaskProvider>
+      </ReownEthersSignerProvider>
+    </AppKit>
   );
 }

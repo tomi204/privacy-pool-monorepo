@@ -61,19 +61,19 @@ function getFHECounterByChainId(
     return { abi: FHECounterABI.abi };
   }
 
-  const entry =
-    FHECounterAddresses?.[
-      chainId.toString() as keyof typeof FHECounterAddresses
-    ];
+  // const entry =
+  //   FHECounterAddresses?.[
+  //     chainId.toString() as keyof typeof FHECounterAddresses
+  //   ];
 
-  if (!("address" in entry) || entry?.address! === ethers?.ZeroAddress!) {
-    return { abi: FHECounterABI.abi, chainId };
-  }
+  // if (!("address" in entry) || entry?.address! === ethers?.ZeroAddress!) {
+  //   return { abi: FHECounterABI.abi, chainId };
+  // }
 
   return {
-    address: entry?.address as `0x${string}` | undefined,
-    chainId: entry?.chainId ?? chainId,
-    chainName: entry?.chainName,
+    address: FHECounterAddresses["11155111"].address as `0x${string}`,
+    chainId: FHECounterAddresses["11155111"].chainId,
+    chainName: FHECounterAddresses["11155111"].chainName,
     abi: FHECounterABI.abi,
   };
 }
@@ -210,7 +210,7 @@ export const useFHECounter = (parameters: {
         isRefreshingRef.current = false;
         setIsRefreshing(false);
       });
-  }, [ethersReadonlyProvider, sameChain]); // Add sameChain to the dependency array to silence the linter
+  }, [ethersReadonlyProvider]); // Removed sameChain from dependencies to prevent infinite loop
 
   // Auto refresh the count handle
   useEffect(() => {
@@ -353,8 +353,6 @@ export const useFHECounter = (parameters: {
     instance,
     countHandle,
     chainId,
-    sameChain,
-    sameSigner,
   ]);
 
   //////////////////////////////////////////////////////////////////////////////
@@ -471,8 +469,6 @@ export const useFHECounter = (parameters: {
       instance,
       chainId,
       refreshCountHandle,
-      sameChain,
-      sameSigner,
     ]
   );
 
