@@ -94,36 +94,24 @@ task("task:provide1", "Provee liquidez con token1 (confidencial, ERC-7984)")
     const pool = await ethers.getContractAt("PrivacyPoolV2", poolAddr, signer);
     const cerc20 = await ethers.getContractAt("CERC20", token1Addr, signer);
 
-    // 1) El pool va a llamar token1.confidentialTransferFrom(msg.sender, pool, amount)
-    //    Para eso, el usuario debe autorizar al pool como operador por tiempo limitado.
     const expiry = BigInt(Math.floor(Date.now() / 1000) + 2 * ttl);
     console.log(`➡️  setOperator(${poolAddr}, ${expiry}) en CERC20`);
     const txOp = await cerc20.setOperator(poolAddr, expiry);
     await txOp.wait();
 
-    // 2) Preparamos el input encriptado para el POOL (no para el token)
-    //    Debe matchear con la firma del usuario.
-    const encrypted = await fhevm
-      .createEncryptedInput(poolAddr, signer.address)
-      .add64(Number(amountClear)) // monto confidencial uint64
-      .encrypt();
+    const encrypted = await fhevm.createEncryptedInput(poolAddr, signer.address).add64(Number(amountClear)).encrypt();
 
-    // 3) Pre-cálculo: staticCall para obtener el tokenId antes de ejecutar
     const tokenIdStatic = await pool.provideLiquidityToken1.staticCall(
       minTick,
       maxTick,
       encrypted.handles[0],
-      Number(amountClear), // amount1Clear (mismo valor claro)
+      Number(amountClear),
       to,
       encrypted.inputProof,
       deadline,
     );
     console.log(`🔎 tokenId (static): ${tokenIdStatic}`);
 
-    // 4) Ejecutar provideLiquidityToken1
-    console.log(
-      `➡️  provideLiquidityToken1(${minTick}, ${maxTick}, <handle>, ${amountClear}, ${to}, <proof>, ${deadline})`,
-    );
     const tx = await pool.provideLiquidityToken1(
       minTick,
       maxTick,

@@ -8,12 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Unlock, ShieldCheck, ImageIcon } from "lucide-react";
+import { Loader2, Unlock, ShieldCheck } from "lucide-react";
 
 import { PositionNFTABI } from "@/abi/PositionNFTABI";
 import { PositionNFTAddresses } from "@/abi/PositionNFTAddresses";
 
 import { useLunarys } from "@/context/Lunarys";
+import Image from "next/image";
 
 type PositionRaw = {
   token0: `0x${string}`;
@@ -176,7 +177,13 @@ export default function PositionsPage() {
       <Card className="border-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white shadow-xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
-            <ImageIcon className="w-6 h-6 text-cyan-300" />
+            <Image
+              src="/iso-logo.svg"
+              alt="LUNARYS"
+              width={24}
+              height={24}
+              className="rounded-md"
+            />
             Your Positions
           </CardTitle>
         </CardHeader>
