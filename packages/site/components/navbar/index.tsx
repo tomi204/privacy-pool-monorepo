@@ -14,46 +14,45 @@ export default function Navbar() {
   const isActive = (href: string) =>
     pathname === href || pathname?.startsWith(`${href}/`);
 
+  const navItems = [
+    { href: "/pools", label: "Pools" },
+    { href: "/pool/positions", label: "Positions" },
+  ];
+
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800 bg-black/70 backdrop-blur supports-[backdrop-filter]:bg-black/40">
-      <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-900/80 bg-black/60 backdrop-blur-xl supports-[backdrop-filter]:bg-black/40">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
+        <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2">
             <Image
               src="/iso-logo.svg"
               alt="Lunarys"
               width={28}
               height={28}
-              className="rounded-md"
+              className="rounded-lg border border-slate-800/80"
               priority
             />
-            <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-cyan-300 to-sky-400 bg-clip-text text-transparent">
+            <span className="text-lg font-semibold tracking-tight text-white">
               LUNARYS
             </span>
           </Link>
-          <nav className="ml-6 hidden md:flex items-center gap-1">
-            <Link
-              href="/pool"
-              className={cn(
-                "px-3 py-2 rounded-lg text-sm font-medium transition",
-                isActive("/pool")
-                  ? "bg-slate-900 text-cyan-300"
-                  : "text-slate-300 hover:text-white hover:bg-slate-900"
-              )}
-            >
-              Pool
-            </Link>
-            <Link
-              href="/pool/positions"
-              className={cn(
-                "px-3 py-2 rounded-lg text-sm font-medium transition",
-                isActive("/pool/positions")
-                  ? "bg-slate-900 text-cyan-300"
-                  : "text-slate-300 hover:text-white hover:bg-slate-900"
-              )}
-            >
-              Positions
-            </Link>
+
+          <nav className="hidden items-center gap-1 rounded-full border border-slate-900/80 bg-slate-950/70 px-1 py-1 md:flex">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "px-4 py-1.5 text-sm font-medium transition",
+                  "rounded-full",
+                  isActive(item.href)
+                    ? "bg-cyan-600 text-white shadow-[0_0_12px_rgba(8,145,178,0.35)]"
+                    : "text-slate-300 hover:text-white hover:bg-slate-900"
+                )}
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
         </div>
 
@@ -62,7 +61,7 @@ export default function Navbar() {
           <Button
             asChild
             variant="secondary"
-            className="bg-cyan-600 hover:bg-cyan-500 text-white"
+            className="bg-cyan-600/90 text-white transition hover:bg-cyan-500"
           >
             <a href={FAUCET_URL} target="_blank" rel="noreferrer">
               Faucet
@@ -70,6 +69,24 @@ export default function Navbar() {
           </Button>
         </div>
       </div>
+      <nav className="border-t border-slate-900/80 bg-black/80 px-4 py-2 md:hidden">
+        <div className="mx-auto flex max-w-7xl items-center justify-center gap-2">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex-1 rounded-full px-3 py-2 text-center text-sm font-medium transition",
+                isActive(item.href)
+                  ? "bg-cyan-600 text-white shadow-[0_0_12px_rgba(8,145,178,0.35)]"
+                  : "text-slate-300 hover:text-white hover:bg-slate-900"
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      </nav>
     </header>
   );
 }
