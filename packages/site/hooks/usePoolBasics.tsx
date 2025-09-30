@@ -32,6 +32,8 @@ export function usePoolBasics(
   const [bal0, setBal0] = useState<bigint>(BigInt(0));
   const [bal1, setBal1] = useState<bigint>(BigInt(0));
   const [allow0, setAllow0] = useState<bigint>(BigInt(0));
+  const [token0Addr, setToken0Addr] = useState<`0x${string}` | undefined>();
+  const [token1Addr, setToken1Addr] = useState<`0x${string}` | undefined>();
 
   const poolRef = useRef<ethers.Contract | null>(null);
   const token0Ref = useRef<ethers.Contract | null>(null);
@@ -49,8 +51,10 @@ export function usePoolBasics(
         );
         poolRef.current = pool;
 
-        const token0 = await pool.getFunction("token0")();
-        const token1 = await pool.getFunction("token1")();
+        const token0 = (await pool.getFunction("token0")()) as `0x${string}`;
+        const token1 = (await pool.getFunction("token1")()) as `0x${string}`;
+        setToken0Addr(token0);
+        setToken1Addr(token1);
 
         const t0 = new ethers.Contract(token0, ERC20, providerRead);
         const t1 = new ethers.Contract(token1, ERC7984_MIN, providerRead);
@@ -75,19 +79,12 @@ export function usePoolBasics(
         setR1v(BigInt(R1v));
 
         if (user) {
-          const [b0, b1, a0] = await Promise.all([
+          const [b0, a0] = await Promise.all([
             t0.balanceOf(user),
-            (async () => {
-              try {
-                return await t0.balanceOf(user);
-              } catch {
-                return BigInt(0);
-              }
-            })(),
             t0.allowance(user, poolAddress),
           ]);
           setBal0(b0 as bigint);
-          setBal1(b1 as bigint);
+          setBal1(BigInt(0));
           setAllow0(a0 as bigint);
         }
       } finally {
@@ -101,6 +98,8 @@ export function usePoolBasics(
     poolRef,
     token0Ref,
     token1Ref,
+    token0Addr,
+    token1Addr,
     sym0,
     sym1,
     dec0,

@@ -22,12 +22,32 @@ export default function PoolPage() {
   } = useReownEthersSigner();
   const user = accounts?.[0];
 
-  const { token0Ref, sym0, sym1, dec0, dec1, r0, r1v, bal0, bal1, allow0 } =
-    usePoolBasics(poolAddress, ethersReadonlyProvider, user);
+  const {
+    token0Ref,
+    token1Ref,
+    token0Addr,
+    token1Addr,
+    sym0,
+    sym1,
+    dec0,
+    dec1,
+    fee,
+    r0,
+    r1v,
+    bal0,
+    bal1,
+    allow0,
+  } = usePoolBasics(poolAddress, ethersReadonlyProvider, user);
 
-  const token0Addr = (token0Ref.current?.target ?? undefined) as
+  const fallbackToken0 = (token0Ref.current?.target ?? undefined) as
     | `0x${string}`
     | undefined;
+  const fallbackToken1 = (token1Ref.current?.target ?? undefined) as
+    | `0x${string}`
+    | undefined;
+
+  const token0Address = token0Addr ?? fallbackToken0;
+  const token1Address = token1Addr ?? fallbackToken1;
 
   return (
     <div className="min-h-[100dvh] bg-black text-slate-100">
@@ -53,15 +73,19 @@ export default function PoolPage() {
             <SwapPanel
               poolAddress={poolAddress}
               signer={ethersSigner}
+              userAddress={user}
               sym0={sym0}
               sym1={sym1}
               dec0={dec0}
               dec1={dec1}
+              fee={fee}
               r0={r0}
               r1v={r1v}
               bal0={bal0}
               bal1={bal1}
               allow0={allow0}
+              token0Address={token0Address}
+              token1Address={token1Address}
             />
           }
           provide={
@@ -69,7 +93,7 @@ export default function PoolPage() {
               <ProvidePanel
                 poolAddress={poolAddress}
                 signer={ethersSigner}
-                token0Address={token0Addr}
+                token0Address={token0Address}
                 dec0={dec0}
                 sym0={sym0}
                 bal0={bal0}
