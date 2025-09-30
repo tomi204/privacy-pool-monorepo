@@ -15,7 +15,6 @@ import {
   useAppKitAccount,
   useAppKitNetwork,
   useAppKitProvider,
-  useAppKitState,
 } from "@reown/appkit/react";
 
 export interface UseReownEthersSignerState {

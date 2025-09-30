@@ -2,14 +2,12 @@
 
 import { createAppKit } from "@reown/appkit/react";
 import { EthersAdapter } from "@reown/appkit-adapter-ethers";
-import { sepolia, mainnet, localhost } from "@reown/appkit/networks";
+import { sepolia, localhost } from "@reown/appkit/networks";
 
-// Get project ID from environment variable, fallback to demo value
 const projectId =
   process.env.NEXT_PUBLIC_REOWN_PROJECT_ID ||
   "c54d67b8d6e2adca8b76b5e4db3a7b8a";
 
-// 2. Create a metadata object
 const metadata = {
   name: "FHEVM React Template",
   description: "A React template for building FHEVM applications",
@@ -20,8 +18,6 @@ const metadata = {
   icons: ["https://avatars.githubusercontent.com/u/37784886"],
 };
 
-// 3. Create the AppKit instance
-// Custom localhost network for development
 const localhostNetwork = {
   ...localhost,
   id: 31337,
@@ -40,7 +36,7 @@ const localhostNetwork = {
 createAppKit({
   adapters: [new EthersAdapter()],
   metadata,
-  networks: [sepolia, localhostNetwork, mainnet],
+  networks: [sepolia, localhostNetwork],
   projectId,
   defaultNetwork: sepolia,
   features: {
