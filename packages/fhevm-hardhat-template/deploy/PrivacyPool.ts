@@ -81,7 +81,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const tx2 = await poolCtr.seedVirtualReserves(VIRTUAL1);
   await tx2.wait();
 
-  // 4.4) Log de verificación
+  // 4.4) Verification log
   const [r0, r1v] = await poolCtr.getReserves();
   log(`Reserves => token0: ${r0.toString()}, token1Virtual: ${r1v.toString()}`);
 };

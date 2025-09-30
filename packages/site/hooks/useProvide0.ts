@@ -1,5 +1,6 @@
 "use client";
 import { ethers } from "ethers";
+import { toast } from "sonner";
 
 const ERC20 = [
   "function allowance(address,address) view returns (uint256)",
@@ -20,7 +21,9 @@ export function useProvide0(
     const current: bigint = await t0.allowance(owner, poolAddress);
     if (current >= amount) return;
     const tx = await t0.approve(poolAddress, amount);
-    await tx.wait();
+    const receipt = await tx.wait();
+    toast.success("Token approval granted");
+    return receipt;
   }
 
   async function provide0(

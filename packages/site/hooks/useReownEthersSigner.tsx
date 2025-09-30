@@ -59,7 +59,6 @@ function useReownEthersSignerInternal(parameters: {
   );
   const ethersSignerRef = useRef<ethers.JsonRpcSigner | undefined>(undefined);
 
-  // Create stable functions using useMemo to prevent infinite loops
   const sameChain = useRef((chainId: number | undefined) => {
     return chainId === chainIdRef.current;
   });

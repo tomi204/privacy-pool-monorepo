@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Unlock, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
 
 import { PositionNFTABI } from "@/abi/PositionNFTABI";
 import { PositionNFTAddresses } from "@/abi/PositionNFTAddresses";
@@ -132,6 +133,7 @@ export function PositionList() {
     try {
       if (!fhevm || !ethersSigner) {
         setStatus("FHEVM or signer not ready");
+        toast.error("FHEVM or signer not ready");
         return;
       }
       setStatus(`Decrypting position #${pos.tokenId.toString()}...`);
@@ -166,8 +168,13 @@ export function PositionList() {
       });
       setPositions(updated as PositionView[]);
       setStatus("Decrypted ✓");
+      toast.success(
+        `Position #${pos.tokenId.toString()} decrypted successfully`
+      );
     } catch (e: any) {
-      setStatus(`Decrypt error: ${e?.message ?? e}`);
+      const errorMessage = `Decrypt error: ${e?.message ?? e}`;
+      setStatus(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -291,7 +298,7 @@ export function PositionList() {
                     Decrypt amounts
                   </Button>
 
-                  {/* Link para ir al pool (ej. /pool?tokenId=...) si querés manejar acciones ahí */}
+                  {/* Link to go to pool (e.g. /pool?tokenId=...) if you want to manage actions there */}
                   <Button
                     size="sm"
                     variant="secondary"

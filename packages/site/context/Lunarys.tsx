@@ -23,7 +23,7 @@ import { useReownEthersSigner } from "@/hooks/useReownEthersSigner";
 import { PrivacyPoolV2ABI } from "@/abi/PrivacyPoolV2ABI";
 import { CERC20ABI } from "@/abi/CERC20ABI";
 
-// Opcional: un registro de pools estáticos por chain (puedes reemplazar por fetch on-chain o config)
+// Optional: static pool registry by chain (you can replace with on-chain fetch or config)
 export type PoolInfo = {
   address: `0x${string}`;
   token0: `0x${string}`;

@@ -13,11 +13,13 @@ const highlights = [
   },
   {
     title: "Native USDC support",
-    description: "Swap against stable liquidity secured by Circle-managed rails.",
+    description:
+      "Swap against stable liquidity secured by Circle-managed rails.",
   },
   {
     title: "Permissionless access",
-    description: "Provide or manage liquidity directly from your connected wallet.",
+    description:
+      "Provide or manage liquidity directly from your connected wallet.",
   },
 ];
 
@@ -71,15 +73,24 @@ export default function PoolsPage() {
           <section className="space-y-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-white">Available pools</h2>
+                <h2 className="text-lg font-semibold text-white">
+                  Available pools
+                </h2>
                 <p className="text-sm text-slate-400">
-                  Minimal cards keep asset pairs and network context front-and-center.
+                  Minimal cards keep asset pairs and network context
+                  front-and-center.
                 </p>
               </div>
               <div className="flex items-center gap-2 rounded-xl border border-slate-800/80 bg-slate-900/70 px-3 py-2 text-xs text-slate-400">
-                <span className="font-mono text-slate-300">{chainId ?? "—"}</span>
+                <span className="font-mono text-slate-300">
+                  {chainId ?? "—"}
+                </span>
                 <span className="text-slate-600">•</span>
-                <span>{pools.length ? `${pools.length} pool${pools.length > 1 ? "s" : ""}` : "No pools"}</span>
+                <span>
+                  {pools.length
+                    ? `${pools.length} pool${pools.length > 1 ? "s" : ""}`
+                    : "No pools"}
+                </span>
               </div>
             </div>
             <PoolList pools={pools} />

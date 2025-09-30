@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { fmt } from "@/lib/fmt";
 import { useProvide0 } from "@/hooks/useProvide0";
 import { PrivacyPoolV2ABI } from "@/abi/PrivacyPoolV2ABI";
+import { toast } from "sonner";
 
 export function ProvidePanel(props: {
   poolAddress: `0x${string}`;
@@ -45,13 +46,18 @@ export function ProvidePanel(props: {
       setBusy(true);
       await ensureApprove(amountWei);
       const owner = await signer!.getAddress();
-      await provide0(
+      const receipt = await provide0(
         { min: Number(minTick), max: Number(maxTick) },
         amountWei,
         owner,
         deadlineSec
       );
+      toast.success(
+        `Liquidity provided successfully (${receipt?.gasUsed?.toString() ?? "?"} gas)`
+      );
       setAmount("");
+    } catch (error: any) {
+      toast.error(`Failed to provide liquidity: ${error?.message ?? error}`);
     } finally {
       setBusy(false);
     }

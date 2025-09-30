@@ -2,9 +2,9 @@
 import { task } from "hardhat/config";
 import type { TaskArguments } from "hardhat/types";
 
-task("task:init-pool-manager", "Setea el pool como manager del PositionNFT")
-  .addOptionalParam("pool", "Dirección del pool (default: deployments/PrivacyPoolV2)")
-  .addOptionalParam("positionnft", "Dirección del PositionNFT (default: deployments/PositionNFT)")
+task("task:init-pool-manager", "Set the pool as manager of the PositionNFT")
+  .addOptionalParam("pool", "Pool address (default: deployments/PrivacyPoolV2)")
+  .addOptionalParam("positionnft", "PositionNFT address (default: deployments/PositionNFT)")
   .setAction(async (args: TaskArguments, hre) => {
     const { ethers, deployments } = hre;
 
@@ -14,7 +14,7 @@ task("task:init-pool-manager", "Setea el pool como manager del PositionNFT")
     const [signer] = await ethers.getSigners();
     const positionNFT = await ethers.getContractAt("PositionNFT", posAddr, signer);
 
-    console.log(`➡️ setPoolManager(${poolAddr}) en PositionNFT ${posAddr}`);
+    console.log(`➡️ setPoolManager(${poolAddr}) on PositionNFT ${posAddr}`);
     const tx = await positionNFT.setPoolManager(poolAddr);
     console.log(`⏳ tx: ${tx.hash}`);
     const rc = await tx.wait();

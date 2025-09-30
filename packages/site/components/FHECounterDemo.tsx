@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState } from "react";
 import { useFhevm } from "@fhevm/react";
 import { useInMemoryStorage } from "../hooks/useInMemoryStorage";
 import { useReownEthersSigner } from "../hooks/useReownEthersSigner";
@@ -7,6 +8,7 @@ import { useFHECounter } from "../hooks/useFHECounter";
 import { errorNotDeployed } from "./ErrorNotDeployed";
 import { ConnectButton } from "./wallet-connect/ConnectButton";
 import { Eip1193Provider } from "ethers";
+import { toast } from "sonner";
 
 /*
  * Main FHECounter React component with 3 buttons
@@ -59,6 +61,39 @@ export const FHECounterDemo = () => {
     sameChain: { current: () => true },
     sameSigner: { current: () => true },
   });
+
+  // Show toasts based on FHECounter state changes
+  const [prevMessage, setPrevMessage] = useState<string | undefined>();
+  const [prevIsDecrypted, setPrevIsDecrypted] = useState<boolean>(false);
+  const [prevIsIncOrDec, setPrevIsIncOrDec] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    if (fheCounter.message !== prevMessage) {
+      setPrevMessage(fheCounter.message);
+      if (fheCounter.message?.includes("completed")) {
+        toast.success("Operation completed successfully");
+      } else if (
+        fheCounter.message?.includes("failed") ||
+        fheCounter.message?.includes("error")
+      ) {
+        toast.error(fheCounter.message);
+      }
+    }
+  }, [fheCounter.message, prevMessage]);
+
+  React.useEffect(() => {
+    if (fheCounter.isDecrypted && !prevIsDecrypted) {
+      toast.success("Counter decrypted successfully");
+    }
+    setPrevIsDecrypted(fheCounter.isDecrypted);
+  }, [fheCounter.isDecrypted, prevIsDecrypted]);
+
+  React.useEffect(() => {
+    if (!fheCounter.isIncOrDec && prevIsIncOrDec) {
+      toast.success("Counter updated successfully");
+    }
+    setPrevIsIncOrDec(fheCounter.isIncOrDec);
+  }, [fheCounter.isIncOrDec, prevIsIncOrDec]);
 
   //////////////////////////////////////////////////////////////////////////////
   // UI Stuff:

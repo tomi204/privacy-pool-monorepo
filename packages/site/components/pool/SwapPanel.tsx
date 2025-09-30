@@ -330,9 +330,9 @@ export function SwapPanel({
 
   const ensureAllowance = useCallback(
     async (required: bigint) => {
-      if (!signer) throw new Error("Conectá tu wallet");
-      if (!token0Address) throw new Error("Token público no resuelto");
-      if (!userAddress) throw new Error("Cuenta no detectada");
+      if (!signer) throw new Error("Connect your wallet");
+      if (!token0Address) throw new Error("Public token not resolved");
+      if (!userAddress) throw new Error("Account not detected");
       const erc = new ethers.Contract(token0Address, ERC20_ABI, signer);
       const current: bigint = await erc.allowance(userAddress, poolAddress);
       if (current >= required) {
@@ -350,15 +350,15 @@ export function SwapPanel({
   );
 
   const ensureOperator = useCallback(async () => {
-    if (!signer) throw new Error("Conectá tu wallet");
-    if (!token1Address) throw new Error("Token confidencial no resuelto");
-    if (!userAddress) throw new Error("Cuenta no detectada");
+    if (!signer) throw new Error("Connect your wallet");
+    if (!token1Address) throw new Error("Confidential token not resolved");
+    if (!userAddress) throw new Error("Account not detected");
     const already = await refreshOperator();
     if (already) return true;
-    setStatus(`Habilitando operador para ${sym1}…`);
+    setStatus(`Enabling operator for ${sym1}…`);
     const receipt = await setOperatorCERC20(token1Address, poolAddress, 3600);
-    if (!receipt) throw new Error("No se pudo establecer el operador");
-    toast.success(`Operador autorizado para ${sym1}`);
+    if (!receipt) throw new Error("Could not set the operator");
+    toast.success(`Operator authorized for ${sym1}`);
     await refreshOperator();
     return true;
   }, [
@@ -373,12 +373,10 @@ export function SwapPanel({
 
   const finalizeConfidentialSwap = useCallback(
     async (requestId: bigint, encryptedHandle: Uint8Array) => {
-      if (!pool) throw new Error("Contrato del pool no listo");
+      if (!pool) throw new Error("Pool contract not ready");
       const config = relayerConfig;
       if (!config) {
-        throw new Error(
-          "Configuración del relayer no disponible para esta red"
-        );
+        throw new Error("Relayer configuration not available for this network");
       }
 
       const provider =
@@ -387,7 +385,7 @@ export function SwapPanel({
           ? new ethers.JsonRpcProvider(config.network)
           : undefined);
       if (!provider) {
-        throw new Error("Proveedor RPC no disponible para operaciones FHE");
+        throw new Error("RPC provider not available for FHE operations");
       }
 
       const kmsContract = new ethers.Contract(
@@ -402,7 +400,7 @@ export function SwapPanel({
       const threshold = Number(thresholdRaw);
 
       if (!kmsSigners || kmsSigners.length === 0) {
-        throw new Error("No hay firmantes de KMS configurados");
+        throw new Error("No KMS signers configured");
       }
 
       const handleHex = ethers.hexlify(encryptedHandle);
@@ -411,7 +409,7 @@ export function SwapPanel({
       while (attempt < RELAYER_MAX_ATTEMPTS) {
         try {
           setStatus(
-            `⏳ Esperando desencriptado externo (request #${requestId})…`
+            `⏳ Waiting for external decryption (request #${requestId})…`
           );
           const result = await fetchPublicDecryption(config.relayerUrl, [
             handleHex,
@@ -421,7 +419,7 @@ export function SwapPanel({
             : `0x${result.decrypted_value}`;
 
           if ((result.signatures?.length ?? 0) < threshold) {
-            throw new Error("Relayer devolvió menos firmas de las necesarias");
+            throw new Error("Relayer returned fewer signatures than required");
           }
 
           const extraForProof =
@@ -434,7 +432,7 @@ export function SwapPanel({
           );
           const cleartextsBytes = ethers.getBytes(decryptedHex);
 
-          setStatus("Confirmando swap confidencial…");
+          setStatus("Confirming confidential swap…");
           await pool
             .getFunction("finalizeSwap")
             .staticCall(requestId, cleartextsBytes, proofBytes);
@@ -448,9 +446,9 @@ export function SwapPanel({
           await finalizeTx.wait();
 
           toast.success(
-            `Swap confidencial finalizado (request #${requestId.toString()})`
+            `Confidential swap finalized (request #${requestId.toString()})`
           );
-          setStatus("✅ Swap confidencial finalizado");
+          setStatus("✅ Confidential swap finalized");
           return;
         } catch (error) {
           if (error instanceof RelayerPendingError) {
@@ -462,13 +460,13 @@ export function SwapPanel({
         }
       }
 
-      throw new Error("Timeout esperando desencriptado externo");
+      throw new Error("Timeout waiting for external decryption");
     },
     [pool, relayerConfig, signer]
   );
   const onSwap = useCallback(async () => {
     if (!signer) {
-      toast.error("Conectá tu wallet");
+      toast.error("Connect your wallet");
       return;
     }
 
@@ -479,40 +477,38 @@ export function SwapPanel({
       const account = userAddress ?? (await signer.getAddress());
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
       if (!pool) {
-        toast.error("Contrato del pool no disponible");
+        toast.error("Pool contract not available");
         return;
       }
 
       if (dir0to1) {
-        if (amountIn <= BigInt(0)) throw new Error("Ingresa un monto válido");
+        if (amountIn <= BigInt(0)) throw new Error("Enter a valid amount");
         if (quote.outAmount <= BigInt(0))
-          throw new Error("No se pudo calcular la salida");
+          throw new Error("Could not calculate the output");
 
         await ensureAllowance(amountIn);
 
         const minOut = applySlippage(quote.outAmount);
         const fn = pool.getFunction("swapToken0ForToken1");
 
-        setStatus("Simulando swap 0→1…");
+        setStatus("Simulating swap 0→1…");
         await fn.staticCall(amountIn, minOut, account, deadline);
 
-        setStatus("Enviando swap 0→1…");
+        setStatus("Sending swap 0→1…");
         const tx = await fn(amountIn, minOut, account, deadline);
         const rc = await tx.wait();
-        toast.success(
-          `Swap confirmado (${rc?.gasUsed?.toString() ?? "?"} gas)`
-        );
-        setStatus("✅ Swap confirmado");
+        toast.success(`Swap confirmed (${rc?.gasUsed?.toString() ?? "?"} gas)`);
+        setStatus("✅ Swap confirmed");
         setInStr("");
       } else {
-        if (!fhevm) throw new Error("FHEVM no inicializado aún");
-        if (!token1Address) throw new Error("Token confidencial no resuelto");
+        if (!fhevm) throw new Error("FHEVM not initialized yet");
+        if (!token1Address) throw new Error("Confidential token not resolved");
         if (desiredOutAmount <= BigInt(0))
-          throw new Error("Ingresa la salida deseada en token público");
+          throw new Error("Enter the desired output in public token");
         if (quote.requiredInAmount <= BigInt(0))
-          throw new Error("No se pudo calcular la entrada confidencial");
+          throw new Error("Could not calculate the confidential input");
         if (quote.requiredInAmount > UINT64_MAX)
-          throw new Error("Monto supera el límite soportado (uint64)");
+          throw new Error("Amount exceeds supported limit (uint64)");
 
         await ensureOperator();
 
@@ -520,12 +516,12 @@ export function SwapPanel({
         const input = fhevm.createEncryptedInput(poolAddress, account);
         input.add64(Number(quote.requiredInAmount));
 
-        setStatus("Cifrando cantidad…");
+        setStatus("Encrypting amount…");
         const enc = await input.encrypt();
 
         const fn = pool.getFunction("swapToken1ForToken0ExactOut");
 
-        setStatus("Simulando swap 1→0…");
+        setStatus("Simulating swap 1→0…");
         const preview: bigint = await fn.staticCall(
           enc.handles[0],
           minOut,
@@ -534,7 +530,7 @@ export function SwapPanel({
           deadline
         );
 
-        setStatus(`Enviando swap 1→0 (request ${preview})…`);
+        setStatus(`Sending swap 1→0 (request ${preview})…`);
         const tx = await fn(
           enc.handles[0],
           minOut,
@@ -544,9 +540,7 @@ export function SwapPanel({
           { gasLimit: BigInt(1_000_000) }
         );
         await tx.wait();
-        toast.success(
-          `Swap confidencial enviado. Request #${preview.toString()}`
-        );
+        toast.success(`Confidential swap sent. Request #${preview.toString()}`);
         await finalizeConfidentialSwap(preview, enc.handles[0]);
         setOperatorReady(true);
         setInStr("");
@@ -612,7 +606,7 @@ export function SwapPanel({
 
         <div className="rounded-2xl border border-slate-900 bg-slate-950 p-3">
           <div className="mb-1 text-xs uppercase tracking-[0.2em] text-slate-500">
-            {dir0to1 ? "From" : "Objetivo público"}
+            {dir0to1 ? "From" : "Public target"}
           </div>
           <div className="flex items-center gap-2">
             <Input
@@ -634,7 +628,7 @@ export function SwapPanel({
               setInStr("");
               setStatus("");
             }}
-            aria-label="Cambiar dirección"
+            aria-label="Change direction"
           >
             <ArrowDownUp className="h-4 w-4" />
           </button>
@@ -642,7 +636,7 @@ export function SwapPanel({
 
         <div className="rounded-2xl border border-slate-900 bg-slate-950 p-3">
           <div className="mb-1 text-xs uppercase tracking-[0.2em] text-slate-500">
-            {dir0to1 ? "To" : "Entrada confidencial"}
+            {dir0to1 ? "To" : "Confidential input"}
           </div>
           <div className="flex items-center gap-2">
             <Input
@@ -656,8 +650,8 @@ export function SwapPanel({
           <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
             <Info className="h-3.5 w-3.5" />
             {dir0to1
-              ? "Cantidad estimada; se aplica slippage al confirmar."
-              : "La entrada confidencial se cifra y transfiere automáticamente."}
+              ? "Estimated amount; slippage is applied when confirming."
+              : "Confidential input is encrypted and transferred automatically."}
           </div>
         </div>
 
@@ -674,14 +668,14 @@ export function SwapPanel({
 
         {dir0to1 && needApprove && (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-            Se solicitará aprobación de {sym0} antes de swapear.
+            Approval of {sym0} will be requested before swapping.
           </div>
         )}
 
         {!dir0to1 && !operatorReady && (
           <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100">
-            Se asignará al pool como operador temporal de {sym1} durante el
-            swap.
+            The pool will be assigned as a temporary operator of {sym1} during
+            the swap.
           </div>
         )}
 

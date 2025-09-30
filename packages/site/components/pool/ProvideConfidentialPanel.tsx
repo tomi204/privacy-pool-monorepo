@@ -151,6 +151,9 @@ export function ProvideConfidentialPanel({
       );
       const rc = await tx.wait();
       setStatus(`✅ Provided (gas=${rc?.gasUsed?.toString() ?? "?"})`);
+      toast.success(
+        `Confidential liquidity provided successfully (gas=${rc?.gasUsed?.toString() ?? "?"})`
+      );
       setAmount1ClearStr("");
 
       // refresh balance handle
