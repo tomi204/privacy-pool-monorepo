@@ -25,7 +25,7 @@ const KMS_VERIFIER_ABI = [
 
 const RELAYER_POLL_INTERVAL_MS = 5_000;
 const RELAYER_MAX_ATTEMPTS = 24;
-const RELAYER_EXTRA_DATA = '0x00';
+const RELAYER_EXTRA_DATA = "0x00";
 
 class RelayerPendingError extends Error {
   constructor(message: string) {
@@ -50,7 +50,8 @@ function getFheNetworkConfig(chainId?: number): FheNetworkConfig | undefined {
         relayerUrl: "https://relayer.testnet.zama.cloud",
         kmsContractAddress: "0x1364cBBf2cDF5032C47d8226a6f6FBD2AFCDacAC",
         aclContractAddress: "0x687820221192C5B662b25367F70076A37bc79b6c",
-        verifyingContractAddressDecryption: "0xb6E160B1ff80D67Bfe90A85eE06Ce0A2613607D1",
+        verifyingContractAddressDecryption:
+          "0xb6E160B1ff80D67Bfe90A85eE06Ce0A2613607D1",
         network: "https://eth-sepolia.public.blastapi.io",
       };
     default:
@@ -60,10 +61,7 @@ function getFheNetworkConfig(chainId?: number): FheNetworkConfig | undefined {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function fetchPublicDecryption(
-  relayerUrl: string,
-  handles: string[]
-) {
+async function fetchPublicDecryption(relayerUrl: string, handles: string[]) {
   const payload = {
     ciphertextHandles: handles,
     extraData: RELAYER_EXTRA_DATA,
@@ -126,10 +124,13 @@ function buildDecryptionProof(
   const normalizedExtra = extraDataHex?.startsWith("0x")
     ? extraDataHex
     : `0x${extraDataHex ?? ""}`;
-  const extraData = normalizedExtra === '0x' ? RELAYER_EXTRA_DATA : normalizedExtra;
+  const extraData =
+    normalizedExtra === "0x" ? RELAYER_EXTRA_DATA : normalizedExtra;
 
   const extraBytes = ethers.getBytes(extraData);
-  const proof = new Uint8Array(1 + normalizedSignatures.length * 65 + extraBytes.length);
+  const proof = new Uint8Array(
+    1 + normalizedSignatures.length * 65 + extraBytes.length
+  );
   proof[0] = normalizedSignatures.length;
 
   normalizedSignatures.forEach((signature, index) => {
@@ -246,54 +247,59 @@ export function SwapPanel({
 
   const quote = useMemo(() => {
     const empty = {
-      outAmount: 0n,
+      outAmount: BigInt(0),
       outFormatted: "",
-      desiredOutAmount: 0n,
-      requiredInAmount: 0n,
+      desiredOutAmount: BigInt(0),
+      requiredInAmount: BigInt(0),
       requiredInFormatted: "",
     };
     if (!inStr.trim()) return empty;
     try {
       if (dir0to1) {
         const parsed = ethers.parseUnits(inStr, dec0);
-        if (parsed <= 0n || r0 <= 0n || r1v <= 0n || feeFactor <= 0n)
+        if (
+          parsed <= BigInt(0) ||
+          r0 <= BigInt(0) ||
+          r1v <= BigInt(0) ||
+          feeFactor <= BigInt(0)
+        )
           return empty;
         const inAfterFee = (parsed * feeFactor) / feeDen;
-        if (inAfterFee <= 0n) return empty;
+        if (inAfterFee <= BigInt(0)) return empty;
         const k = r0 * r1v;
         const r0After = r0 + inAfterFee;
-        if (r0After === 0n) return empty;
+        if (r0After === BigInt(0)) return empty;
         const r1After = k / r0After;
         const out = r1v - r1After;
-        if (out <= 0n) return empty;
+        if (out <= BigInt(0)) return empty;
         return {
           outAmount: out,
           outFormatted: ethers.formatUnits(out, dec1),
-          desiredOutAmount: 0n,
-          requiredInAmount: 0n,
+          desiredOutAmount: BigInt(0),
+          requiredInAmount: BigInt(0),
           requiredInFormatted: "",
         };
       }
       const desiredOut = ethers.parseUnits(inStr, dec0);
       if (
-        desiredOut <= 0n ||
+        desiredOut <= BigInt(0) ||
         desiredOut >= r0 ||
-        r0 <= 0n ||
-        r1v <= 0n ||
-        feeFactor <= 0n
+        r0 <= BigInt(0) ||
+        r1v <= BigInt(0) ||
+        feeFactor <= BigInt(0)
       )
         return empty;
       const k = r0 * r1v;
       const r0After = r0 - desiredOut;
-      if (r0After <= 0n) return empty;
+      if (r0After <= BigInt(0)) return empty;
       const r1After = k / r0After;
       const inAfterFee = r1After - r1v;
-      if (inAfterFee <= 0n) return empty;
+      if (inAfterFee <= BigInt(0)) return empty;
       const numerator = inAfterFee * feeDen;
-      const needIn = (numerator + (feeFactor - 1n)) / feeFactor;
-      if (needIn <= 0n) return empty;
+      const needIn = (numerator + (feeFactor - BigInt(1))) / feeFactor;
+      if (needIn <= BigInt(0)) return empty;
       return {
-        outAmount: 0n,
+        outAmount: BigInt(0),
         outFormatted: ethers.formatUnits(needIn, dec1),
         desiredOutAmount: desiredOut,
         requiredInAmount: needIn,
@@ -309,15 +315,16 @@ export function SwapPanel({
     try {
       return ethers.parseUnits(inStr || "0", dec0);
     } catch {
-      return 0n;
+      return BigInt(0);
     }
   }, [inStr, dir0to1, dec0, quote.requiredInAmount]);
 
-  const desiredOutAmount = dir0to1 ? 0n : quote.desiredOutAmount;
-  const needApprove = dir0to1 && amountIn > 0n && allowanceState < amountIn;
+  const desiredOutAmount = dir0to1 ? BigInt(0) : quote.desiredOutAmount;
+  const needApprove =
+    dir0to1 && amountIn > BigInt(0) && allowanceState < amountIn;
   const slippageFactor = BigInt(10_000 - slippageBps);
   const applySlippage = useCallback(
-    (value: bigint) => (value * slippageFactor) / 10_000n,
+    (value: bigint) => (value * slippageFactor) / BigInt(10_000),
     [slippageFactor]
   );
 
@@ -369,12 +376,16 @@ export function SwapPanel({
       if (!pool) throw new Error("Contrato del pool no listo");
       const config = relayerConfig;
       if (!config) {
-        throw new Error("Configuración del relayer no disponible para esta red");
+        throw new Error(
+          "Configuración del relayer no disponible para esta red"
+        );
       }
 
       const provider =
         signer?.provider ??
-        (config.network ? new ethers.JsonRpcProvider(config.network) : undefined);
+        (config.network
+          ? new ethers.JsonRpcProvider(config.network)
+          : undefined);
       if (!provider) {
         throw new Error("Proveedor RPC no disponible para operaciones FHE");
       }
@@ -399,8 +410,12 @@ export function SwapPanel({
 
       while (attempt < RELAYER_MAX_ATTEMPTS) {
         try {
-          setStatus(`⏳ Esperando desencriptado externo (request #${requestId})…`);
-          const result = await fetchPublicDecryption(config.relayerUrl, [handleHex]);
+          setStatus(
+            `⏳ Esperando desencriptado externo (request #${requestId})…`
+          );
+          const result = await fetchPublicDecryption(config.relayerUrl, [
+            handleHex,
+          ]);
           const decryptedHex = result.decrypted_value.startsWith("0x")
             ? result.decrypted_value
             : `0x${result.decrypted_value}`;
@@ -410,7 +425,7 @@ export function SwapPanel({
           }
 
           const extraForProof =
-            !result.extra_data || result.extra_data === '0x'
+            !result.extra_data || result.extra_data === "0x"
               ? RELAYER_EXTRA_DATA
               : result.extra_data;
           const proofBytes = buildDecryptionProof(
@@ -424,9 +439,12 @@ export function SwapPanel({
             .getFunction("finalizeSwap")
             .staticCall(requestId, cleartextsBytes, proofBytes);
 
-          const finalizeTx = await pool
-            .getFunction("finalizeSwap")
-            (requestId, cleartextsBytes, proofBytes, { gasLimit: 600000n });
+          const finalizeTx = await pool.getFunction("finalizeSwap")(
+            requestId,
+            cleartextsBytes,
+            proofBytes,
+            { gasLimit: BigInt(600000) }
+          );
           await finalizeTx.wait();
 
           toast.success(
@@ -466,8 +484,8 @@ export function SwapPanel({
       }
 
       if (dir0to1) {
-        if (amountIn <= 0n) throw new Error("Ingresa un monto válido");
-        if (quote.outAmount <= 0n)
+        if (amountIn <= BigInt(0)) throw new Error("Ingresa un monto válido");
+        if (quote.outAmount <= BigInt(0))
           throw new Error("No se pudo calcular la salida");
 
         await ensureAllowance(amountIn);
@@ -489,9 +507,9 @@ export function SwapPanel({
       } else {
         if (!fhevm) throw new Error("FHEVM no inicializado aún");
         if (!token1Address) throw new Error("Token confidencial no resuelto");
-        if (desiredOutAmount <= 0n)
+        if (desiredOutAmount <= BigInt(0))
           throw new Error("Ingresa la salida deseada en token público");
-        if (quote.requiredInAmount <= 0n)
+        if (quote.requiredInAmount <= BigInt(0))
           throw new Error("No se pudo calcular la entrada confidencial");
         if (quote.requiredInAmount > UINT64_MAX)
           throw new Error("Monto supera el límite soportado (uint64)");
@@ -563,8 +581,8 @@ export function SwapPanel({
   const toValue = dir0to1 ? quote.outFormatted : quote.requiredInFormatted;
 
   const canSwap = dir0to1
-    ? amountIn > 0n && quote.outAmount > 0n
-    : desiredOutAmount > 0n && quote.requiredInAmount > 0n;
+    ? amountIn > BigInt(0) && quote.outAmount > BigInt(0)
+    : desiredOutAmount > BigInt(0) && quote.requiredInAmount > BigInt(0);
 
   return (
     <Card className="border border-slate-900/70 bg-slate-950/60">
