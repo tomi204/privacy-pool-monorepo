@@ -18,11 +18,137 @@ const ERC20_ABI = [
 ] as const;
 
 const UINT64_MAX = (BigInt(1) << BigInt(64)) - BigInt(1);
+const KMS_VERIFIER_ABI = [
+  "function getKmsSigners() view returns (address[])",
+  "function getThreshold() view returns (uint256)",
+] as const;
+
+const RELAYER_POLL_INTERVAL_MS = 5_000;
+const RELAYER_MAX_ATTEMPTS = 24;
+const RELAYER_EXTRA_DATA = '0x00';
+
+class RelayerPendingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RelayerPendingError";
+  }
+}
+
+type FheNetworkConfig = {
+  relayerUrl: string;
+  kmsContractAddress: `0x${string}`;
+  aclContractAddress: `0x${string}`;
+  verifyingContractAddressDecryption: `0x${string}`;
+  network?: string;
+};
+
+function getFheNetworkConfig(chainId?: number): FheNetworkConfig | undefined {
+  if (!chainId) return undefined;
+  switch (chainId) {
+    case 11155111:
+      return {
+        relayerUrl: "https://relayer.testnet.zama.cloud",
+        kmsContractAddress: "0x1364cBBf2cDF5032C47d8226a6f6FBD2AFCDacAC",
+        aclContractAddress: "0x687820221192C5B662b25367F70076A37bc79b6c",
+        verifyingContractAddressDecryption: "0xb6E160B1ff80D67Bfe90A85eE06Ce0A2613607D1",
+        network: "https://eth-sepolia.public.blastapi.io",
+      };
+    default:
+      return undefined;
+  }
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function fetchPublicDecryption(
+  relayerUrl: string,
+  handles: string[]
+) {
+  const payload = {
+    ciphertextHandles: handles,
+    extraData: RELAYER_EXTRA_DATA,
+  };
+
+  let response: Response;
+  try {
+    response = await fetch(`${relayerUrl}/v1/public-decrypt`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    throw new RelayerPendingError(`Relayer unreachable: ${String(error)}`);
+  }
+
+  if (!response.ok) {
+    if ([404, 425, 429, 500, 502, 503, 504].includes(response.status)) {
+      throw new RelayerPendingError(
+        `Relayer not ready (status ${response.status})`
+      );
+    }
+    const text = await response.text().catch(() => "");
+    throw new Error(
+      `Relayer error ${response.status}${text ? `: ${text}` : ""}`
+    );
+  }
+
+  let json: any;
+  try {
+    json = await response.json();
+  } catch (error) {
+    throw new RelayerPendingError(`Invalid relayer JSON: ${String(error)}`);
+  }
+
+  if (!json || typeof json !== "object" || !Array.isArray(json.response)) {
+    throw new RelayerPendingError("Relayer response not ready yet");
+  }
+
+  if (!json.response.length) {
+    throw new RelayerPendingError("Relayer returned empty response list");
+  }
+
+  return json.response[0] as {
+    decrypted_value: string;
+    signatures?: string[];
+    extra_data?: string;
+  };
+}
+
+function buildDecryptionProof(
+  signatures: string[] = [],
+  extraDataHex = RELAYER_EXTRA_DATA
+) {
+  const normalizedSignatures = signatures.map((signature) =>
+    signature.startsWith("0x") ? signature : `0x${signature}`
+  );
+  const normalizedExtra = extraDataHex?.startsWith("0x")
+    ? extraDataHex
+    : `0x${extraDataHex ?? ""}`;
+  const extraData = normalizedExtra === '0x' ? RELAYER_EXTRA_DATA : normalizedExtra;
+
+  const extraBytes = ethers.getBytes(extraData);
+  const proof = new Uint8Array(1 + normalizedSignatures.length * 65 + extraBytes.length);
+  proof[0] = normalizedSignatures.length;
+
+  normalizedSignatures.forEach((signature, index) => {
+    const sigBytes = ethers.getBytes(signature);
+    proof.set(sigBytes, 1 + index * 65);
+  });
+
+  if (extraBytes.length) {
+    proof.set(extraBytes, 1 + normalizedSignatures.length * 65);
+  }
+
+  return proof;
+}
 
 type SwapPanelProps = {
   poolAddress: `0x${string}`;
   signer: ethers.Signer | null | undefined;
   userAddress?: string;
+  chainId?: number;
   sym0: string;
   sym1: string;
   dec0: number;
@@ -41,6 +167,7 @@ export function SwapPanel({
   poolAddress,
   signer,
   userAddress,
+  chainId,
   sym0,
   sym1,
   dec0,
@@ -55,6 +182,12 @@ export function SwapPanel({
   token1Address,
 }: SwapPanelProps) {
   const { fhevm, setOperatorCERC20 } = useLunarys();
+  const relayerConfig = useMemo(() => getFheNetworkConfig(chainId), [chainId]);
+
+  const pool = useMemo(() => {
+    if (!signer) return null;
+    return new ethers.Contract(poolAddress, PrivacyPoolV2ABI.abi, signer);
+  }, [poolAddress, signer]);
 
   const [busy, setBusy] = useState(false);
   const [dir0to1, setDir] = useState(true);
@@ -231,6 +364,90 @@ export function SwapPanel({
     poolAddress,
   ]);
 
+  const finalizeConfidentialSwap = useCallback(
+    async (requestId: bigint, encryptedHandle: Uint8Array) => {
+      if (!pool) throw new Error("Contrato del pool no listo");
+      const config = relayerConfig;
+      if (!config) {
+        throw new Error("Configuración del relayer no disponible para esta red");
+      }
+
+      const provider =
+        signer?.provider ??
+        (config.network ? new ethers.JsonRpcProvider(config.network) : undefined);
+      if (!provider) {
+        throw new Error("Proveedor RPC no disponible para operaciones FHE");
+      }
+
+      const kmsContract = new ethers.Contract(
+        config.kmsContractAddress,
+        KMS_VERIFIER_ABI,
+        provider
+      );
+      const [thresholdRaw, kmsSigners] = await Promise.all([
+        kmsContract.getThreshold(),
+        kmsContract.getKmsSigners(),
+      ]);
+      const threshold = Number(thresholdRaw);
+
+      if (!kmsSigners || kmsSigners.length === 0) {
+        throw new Error("No hay firmantes de KMS configurados");
+      }
+
+      const handleHex = ethers.hexlify(encryptedHandle);
+      let attempt = 0;
+
+      while (attempt < RELAYER_MAX_ATTEMPTS) {
+        try {
+          setStatus(`⏳ Esperando desencriptado externo (request #${requestId})…`);
+          const result = await fetchPublicDecryption(config.relayerUrl, [handleHex]);
+          const decryptedHex = result.decrypted_value.startsWith("0x")
+            ? result.decrypted_value
+            : `0x${result.decrypted_value}`;
+
+          if ((result.signatures?.length ?? 0) < threshold) {
+            throw new Error("Relayer devolvió menos firmas de las necesarias");
+          }
+
+          const extraForProof =
+            !result.extra_data || result.extra_data === '0x'
+              ? RELAYER_EXTRA_DATA
+              : result.extra_data;
+          const proofBytes = buildDecryptionProof(
+            result.signatures,
+            extraForProof
+          );
+          const cleartextsBytes = ethers.getBytes(decryptedHex);
+
+          setStatus("Confirmando swap confidencial…");
+          await pool
+            .getFunction("finalizeSwap")
+            .staticCall(requestId, cleartextsBytes, proofBytes);
+
+          const finalizeTx = await pool
+            .getFunction("finalizeSwap")
+            (requestId, cleartextsBytes, proofBytes, { gasLimit: 600000n });
+          await finalizeTx.wait();
+
+          toast.success(
+            `Swap confidencial finalizado (request #${requestId.toString()})`
+          );
+          setStatus("✅ Swap confidencial finalizado");
+          return;
+        } catch (error) {
+          if (error instanceof RelayerPendingError) {
+            attempt += 1;
+            await sleep(RELAYER_POLL_INTERVAL_MS);
+            continue;
+          }
+          throw error;
+        }
+      }
+
+      throw new Error("Timeout esperando desencriptado externo");
+    },
+    [pool, relayerConfig, signer]
+  );
   const onSwap = useCallback(async () => {
     if (!signer) {
       toast.error("Conectá tu wallet");
@@ -243,11 +460,10 @@ export function SwapPanel({
     try {
       const account = userAddress ?? (await signer.getAddress());
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
-      const pool = new ethers.Contract(
-        poolAddress,
-        PrivacyPoolV2ABI.abi,
-        signer
-      );
+      if (!pool) {
+        toast.error("Contrato del pool no disponible");
+        return;
+      }
 
       if (dir0to1) {
         if (amountIn <= 0n) throw new Error("Ingresa un monto válido");
@@ -313,9 +529,8 @@ export function SwapPanel({
         toast.success(
           `Swap confidencial enviado. Request #${preview.toString()}`
         );
-        setStatus(
-          `⏳ Esperando desencriptado externo (request #${preview.toString()})`
-        );
+        await finalizeConfidentialSwap(preview, enc.handles[0]);
+        setOperatorReady(true);
         setInStr("");
       }
 
@@ -330,7 +545,7 @@ export function SwapPanel({
   }, [
     signer,
     userAddress,
-    poolAddress,
+    pool,
     dir0to1,
     amountIn,
     quote.outAmount,
@@ -342,6 +557,7 @@ export function SwapPanel({
     ensureOperator,
     applySlippage,
     refreshAllowance,
+    finalizeConfidentialSwap,
   ]);
 
   const toValue = dir0to1 ? quote.outFormatted : quote.requiredInFormatted;

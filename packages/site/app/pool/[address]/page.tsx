@@ -74,6 +74,7 @@ export default function PoolPage() {
               poolAddress={poolAddress}
               signer={ethersSigner}
               userAddress={user}
+              chainId={chainId}
               sym0={sym0}
               sym1={sym1}
               dec0={dec0}
