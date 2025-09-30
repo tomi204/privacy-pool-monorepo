@@ -616,7 +616,9 @@ export function SwapPanel({
               inputMode="decimal"
               className="text-xl"
             />
-            <div className="text-sm text-slate-200">{sym0}</div>
+            <div className="text-sm text-slate-200">
+              {dir0to1 ? sym0 : sym1}
+            </div>
           </div>
         </div>
 
@@ -645,7 +647,9 @@ export function SwapPanel({
               placeholder="0.0"
               className="text-xl"
             />
-            <div className="text-sm text-slate-200">{sym1}</div>
+            <div className="text-sm text-slate-200">
+              {dir0to1 ? sym1 : sym0}
+            </div>
           </div>
           <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
             <Info className="h-3.5 w-3.5" />
