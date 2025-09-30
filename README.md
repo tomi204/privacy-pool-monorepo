@@ -1,134 +1,130 @@
-# FHEVM React Template
+<p align="center">
+  <img src="packages/site/public/iso-logo.svg" width="120" alt="Lunarys logo" />
+</p>
 
-The FHEVM React Template is an ultra-minimal React project for building and running an FHEVM-enabled dApp.
-It works alongside the [fhevm-hardhat-template](https://github.com/zama-ai/fhevm-hardhat-template)
-and provides a simple development frontend for interacting with the `FHECounter.sol` contract.
+# Lunarys Protocol Monorepo
 
-This template also illustrates how to run your FHEVM-dApp on both Sepolia as well as a local Hardhat Node (much faster).
+Lunarys delivers a privacy-first automated market maker that blends public USDC liquidity with fully homomorphic encrypted balances. This monorepo packages every layer—smart contracts, relayer workflow, frontend UX, and test automation—so teams can stand up a confidential swap environment end to end.
 
-## Features
+---
 
-- **@zama-fhe/relayer-sdk**: Fully Homomorphic Encryption for Ethereum Virtual Machine
-- **React**: Modern UI framework for building interactive interfaces
-- **Next.js**: Next-generation frontend build tool
-- **Tailwind**: Utility-first CSS framework for rapid UI development
+## Table of Contents
+- [Project Overview](#project-overview)
+- [Quick Start Tutorial](#quick-start-tutorial)
+- [Documentation Suite](#documentation-suite)
+- [Architecture Snapshot](#architecture-snapshot)
+- [Workspace Command Index](#workspace-command-index)
+- [Operational Checklist](#operational-checklist)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
 
-## Requirements
+## Project Overview
+- `packages/fhevm-hardhat-template` — Hardhat project with `PrivacyPoolV2`, `PositionNFT`, deployment scripts, and a full regression test suite
+- `packages/site` — Next.js application showcasing the Lunarys UX, wallet onboarding, encrypted swaps, and position management
+- `packages/fhevm-react` — Helper bindings around `@fhevm/react` for decryption signatures and storage
+- `packages/postdeploy` — Tooling that converts Hardhat deployments into TypeScript ABI/address bundles for the UI
+- `scripts/` — Root orchestration (ABI generation, Hardhat node health checks, deployment helpers)
 
-- You need to have Metamask browser extension installed on your browser.
+Minimum requirements: Node.js 20+, npm 9+, Git, and a wallet supported by Reown/AppKit or MetaMask. Sepolia deployments additionally require funded accounts, `MNEMONIC`, and `INFURA_API_KEY`.
 
-## Local Hardhat Network (to add in MetaMask)
+## Quick Start Tutorial
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
+2. **Launch the FHE-enabled Hardhat node**
+   ```bash
+   npm run hardhat-node
+   ```
+   Verifies `http://127.0.0.1:8545` is free, then spawns Hardhat with the FHE plugin.
+3. **Deploy and seed the protocol**
+   ```bash
+   npm run deploy:hardhat-node
+   ```
+   Runs all deploy scripts, seeds demo liquidity, and writes ABIs to `packages/site/abi/`.
+4. **Start the Lunarys frontend**
+   ```bash
+   npm run dev:mock
+   ```
+   Visit `http://localhost:3000`, connect your wallet to chain ID `31337`, and explore swaps, liquidity, and position decryption.
+5. **Regenerate ABIs after restarts**
+   ```bash
+   npm run generate-abi
+   ```
+   Use whenever you wipe deployments or switch networks.
 
-Follow the step-by-step guide in the [Hardhat + MetaMask](https://docs.metamask.io/wallet/how-to/run-devnet/) documentation to set up your local devnet using Hardhat and MetaMask.
-
-- Name: Hardhat
-- RPC URL: http://127.0.0.1:8545
-- Chain ID: 31337
-- Currency symbol: ETH
-
-## Install
-
-1. Clone this repository.
-2. From the repo root, run:
-
-```sh
-npm install
-```
-
-## Quickstart
-
-1. Setup your hardhat environment variables:
-
-Follow the detailed instructions in the [FHEVM documentation](https://docs.zama.ai/protocol/solidity-guides/getting-started/setup#set-up-the-hardhat-configuration-variables-optional) to setup `MNEMONIC` + `INFURA_API_KEY` Hardhat environment variables
-
-2. Start a local Hardhat node (new terminal):
-
-```sh
-# Default RPC: http://127.0.0.1:8545  | chainId: 31337
-npm run hardhat-node
-```
-
-3. Launch the frontend in mock mode:
-
-```sh
-npm run dev:mock
-```
-
-4. Start your browser with the Metamask extension installed and open http://localhost:3000
-
-5. Open the Metamask extension to connect to the local Hardhat node
-   i. Select Add network.
-   ii. Select Add a network manually.
-   iii. Enter your Hardhat Network RPC URL, http://127.0.0.1:8545 (or http://localhost:8545).
-   iv. Enter your Hardhat Network chain ID, 31337 (or 0x539 in hexadecimal format).
-
-## Run on Sepolia
-
-1. Deploy your contract on Sepolia Testnet
-
-```sh
+Sepolia deployment:
+```bash
+export MNEMONIC="your twelve words"
+export INFURA_API_KEY="your-infura-project-id"
 npm run deploy:sepolia
 ```
+Restart the frontend pointing to Sepolia once addresses refresh.
 
-2. In your browser open `http://localhost:3000`
+## Documentation Suite
+Deep dives live under `docs/`. Each topic links back to this overview.
 
-3. Open the Metamask extension to connect to the Sepolia network
+| Guide | Description |
+| --- | --- |
+| [End-to-End Tutorial](docs/end-to-end-tutorial.md) | Step-by-step walkthrough covering deployments, contract functions, frontend actions, and relayer finalization |
+| [Smart Contracts Guide](docs/contracts.md) | Architecture, deployment workflows, Hardhat tasks, and extensibility notes |
+| [Frontend Implementation Guide](docs/frontend.md) | Provider stack, UX flows, configuration touchpoints, and component structure |
+| [Relayer & Decryption Playbook](docs/relayer-and-decryption.md) | Encryption pipeline, relayer integration, and troubleshooting matrix |
+| [Testing & CI Guide](docs/testing-and-ci.md) | Test suites, coverage commands, and recommended CI guardrails |
 
-## How to fix Hardhat Node + Metamask Errors ?
+## Architecture Snapshot
+- **PrivacyPoolV2** (`packages/fhevm-hardhat-template/contracts/PrivacyPool.sol`)
+  - Constant-product AMM supporting public→confidential swaps immediately and confidential→public swaps via async decryption
+  - Maintains `PendingSwap` records, virtual reserves, and hourly volume analytics
+  - Grants encrypted liquidity shares through `PositionNFT`
+- **Relayer Loop** (documented in `SwapPanel.tsx`)
+  - Encrypts confidential inputs client-side, requests off-chain decryption, polls `POST /v1/public-decrypt`, and finalizes swaps on-chain once signatures meet threshold
+- **Frontend UX** (`packages/site/app/pool/[address]/page.tsx`)
+  - Presents swap, public liquidity, and confidential liquidity panes side-by-side
+  - Surfaces encrypted balance handles with decrypt-on-demand controls in `ProvideConfidentialPanel`
+  - Lists NFT positions and decrypts them via `LunarysProvider.decryptHandles`
 
-When using MetaMask as a wallet provider with a development node like Hardhat, you may encounter two common types of errors:
+## Workspace Command Index
+### Root-level scripts
+- `npm run hardhat-node` — Start the local FHE Hardhat network
+- `npm run deploy:hardhat-node` — Deploy contracts to localhost and regenerate ABIs
+- `npm run deploy:sepolia` — Deploy to Sepolia (requires `MNEMONIC` + `INFURA_API_KEY`)
+- `npm run generate-abi` — Rebuild `packages/site/abi/*` from the latest Hardhat deployments
 
-### 1. ⚠️ Nonce Mismatch ❌💥
+### Contracts (`packages/fhevm-hardhat-template`)
+```bash
+cd packages/fhevm-hardhat-template
+npm test            # Hardhat test suite
+npm run coverage    # Solidity coverage report
+npx hardhat task:init-pool-manager --network <network>
+npx hardhat task:deposit0 --amount 250 --network <network>
+npx hardhat task:deposit1 --amount 750000 --network <network>
+npx hardhat task:provide0 --amount 1000 --network <network>
+npx hardhat task:provide1 --amount 250000 --network <network>
+```
 
-MetaMask tracks wallet nonces (the number of transactions sent from a wallet). However, if you restart your Hardhat node, the nonce is reset on the dev node, but MetaMask does not update its internal nonce tracking. This discrepancy causes a nonce mismatch error.
+### Frontend (`packages/site`)
+```bash
+cd packages/site
+npm run dev:mock    # Next.js dev server (verifies Hardhat node)
+npm run dev         # Standard Next.js dev server
+npm run lint        # ESLint checks
+npm run build       # Production build
+npm run start       # Serve built assets
+```
 
-### 2. ⚠️ View Function Call Result Mismatch ❌💥
+## Operational Checklist
+1. Update contracts → run tests → deploy locally → confirm UI → document changes.
+2. After each network deployment, run `npm run generate-abi` and commit regenerated files.
+3. Monitor relayer health and adjust `RELAYER_MAX_ATTEMPTS` or endpoints in `SwapPanel.tsx` as infrastructure evolves.
+4. Incorporate new pools into `DEFAULT_REGISTRY` (`packages/site/context/Lunarys.tsx`) so the UI exposes them immediately.
+5. Keep wallet caches clean when restarting local nodes; see Troubleshooting.
 
-MetaMask caches the results of view function calls. If you restart your Hardhat node, MetaMask may return outdated cached data corresponding to a previous instance of the node, leading to incorrect results.
-
-### ✅ How to Fix Nonce Mismatch:
-
-To fix the nonce mismatch error, simply clear the MetaMask cache:
-
-1. Open the MetaMask browser extension.
-2. Select the Hardhat network.
-3. Go to Settings > Advanced.
-4. Click the "Clear Activity Tab" red button to reset the nonce tracking.
-
-The correct way to do this is also explained [here](https://docs.metamask.io/wallet/how-to/run-devnet/).
-
-### ✅ How to Fix View Function Return Value Mismatch:
-
-To fix the view function result mismatch:
-
-1. Restart the entire browser. MetaMask stores its cache in the extension's memory, which cannot be cleared by simply clearing the browser cache or using MetaMask's built-in cache cleaning options.
-
-By following these steps, you can ensure that MetaMask syncs correctly with your Hardhat node and avoid potential issues related to nonces and cached view function results.
-
-## Project Structure Overview
-
-### Key Files/Folders
-
-- **`<root>/packages/site/fhevm`**: This folder contains the essential hooks needed to interact with FHEVM-enabled smart contracts. It is meant to be easily copied and integrated into any FHEVM + React project.
-
-- **`<root>/packages/site/hooks/useFHECounter.tsx`**: A simple React custom hook that demonstrates how to use the `useFhevm` hook in a basic use case, serving as an example of integration.
-
-### Secondary Files/Folders
-
-- **`<root>/packages/site/hooks/metamask`**: This folder includes hooks designed to manage the MetaMask Wallet provider. These hooks can be easily adapted or replaced to support other wallet providers, following the EIP-6963 standard,
-- Additionally, the project is designed to be flexible, allowing developers to easily replace `ethers.js` with a more React-friendly library of their choice, such as `Wagmi`.
-
-## Documentation
-
-- [Hardhat + MetaMask](https://docs.metamask.io/wallet/how-to/run-devnet/): Set up your local devnet step by step using Hardhat and MetaMask.
-- [FHEVM Documentation](https://docs.zama.ai/protocol/solidity-guides/)
-- [FHEVM Hardhat](https://docs.zama.ai/protocol/solidity-guides/development-guide/hardhat)
-- [@zama-fhe/relayer-sdk Documentation](https://docs.zama.ai/protocol/relayer-sdk-guides/)
-- [Setting up MNEMONIC and INFURA_API_KEY](https://docs.zama.ai/protocol/solidity-guides/getting-started/setup#set-up-the-hardhat-configuration-variables-optional)
-- [React Documentation](https://reactjs.org/)
-- [FHEVM Discord Community](https://discord.com/invite/zama)
-- [GitHub Issues](https://github.com/zama-ai/fhevm-react-template/issues)
+## Troubleshooting
+- **Nonce or cache mismatches (MetaMask / Reown)** — Restart the browser or clear wallet activity after resetting Hardhat; detailed steps live in the [Smart Contracts Guide](docs/contracts.md#local-development-workflow).
+- **Confidential swap stuck pending** — Consult the [Relayer & Decryption Playbook](docs/relayer-and-decryption.md#troubleshooting-matrix) for polling tips and signature verification.
+- **ABI mismatch** — Re-run `npm run generate-abi`; confirm `packages/fhevm-hardhat-template/deployments/*` contains the latest artifacts.
+- **Missing positions** — Ensure `PositionNFTAddresses.ts` matches the active chain and decrypt handles through `PositionList` to verify connectivity.
 
 ## License
-
-This project is licensed under the BSD-3-Clause-Clear License - see the LICENSE file for details.
+BSD-3-Clause-Clear. See `LICENSE` for full text.

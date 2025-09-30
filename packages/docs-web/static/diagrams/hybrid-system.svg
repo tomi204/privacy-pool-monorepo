@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="1000" viewBox="0 0 1200 1000" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7"
+     refX="9" refY="3.5" orient="auto" markerUnits="strokeWidth">
+      <polygon points="0 0, 10 3.5, 0 7" fill="black" stroke="black" stroke-width="1"/>
+    </marker>
+    <style>
+      .subgraph { fill: white; stroke: black; stroke-width: 2; stroke-dasharray: 8,5; }
+      .user-box { fill: white; stroke: black; stroke-width: 2; }
+      .pool-box { fill: white; stroke: black; stroke-width: 2; }
+      .contract-box { fill: white; stroke: black; stroke-width: 2; }
+      .relayer-box { fill: white; stroke: black; stroke-width: 2; }
+      .text { font-family: Arial, sans-serif; text-anchor: middle; fill: black; }
+      .title { font-size: 14px; font-weight: bold; }
+      .subtitle { font-size: 11px; }
+      .label { font-size: 10px; font-weight: bold; }
+      .subgraph-title { font-size: 16px; font-weight: bold; }
+      .arrow { stroke: black; stroke-width: 2.5; fill: none; marker-end: url(#arrowhead); }
+      .deposit-arrow { stroke: black; stroke-width: 2.5; fill: none; marker-end: url(#arrowhead); stroke-dasharray: 10,5; }
+      .withdraw-arrow { stroke: black; stroke-width: 2.5; fill: none; marker-end: url(#arrowhead); stroke-dasharray: 3,3; }
+    </style>
+  </defs>
+
+  <!-- User Perspective Subgraph -->
+  <rect x="50" y="80" width="280" height="180" rx="15" class="subgraph"/>
+  <text x="190" y="110" class="text subgraph-title">User Perspective</text>
+
+  <!-- User -->
+  <rect x="120" y="140" width="140" height="80" rx="10" class="user-box"/>
+  <text x="190" y="170" class="text title">👤 User</text>
+
+  <!-- Hybrid Pool Subgraph -->
+  <rect x="400" y="80" width="350" height="280" rx="15" class="subgraph"/>
+  <text x="575" y="110" class="text subgraph-title">Hybrid Pool</text>
+
+  <!-- SimpleHybridPool -->
+  <rect x="430" y="140" width="180" height="100" rx="10" class="pool-box"/>
+  <text x="520" y="170" class="text title">🔄 SimpleHybridPool</text>
+  <text x="520" y="190" class="text subtitle">verify ZK proof</text>
+  <text x="520" y="210" class="text subtitle">burn/transfer operations</text>
+
+  <!-- HybridPoolController -->
+  <rect x="540" y="270" width="180" height="70" rx="10" class="pool-box"/>
+  <text x="630" y="295" class="text title">🎛️ HybridPoolController</text>
+  <text x="630" y="315" class="text subtitle">Pool Management</text>
+
+  <!-- Encrypted ERC System Subgraph -->
+  <rect x="820" y="80" width="300" height="280" rx="15" class="subgraph"/>
+  <text x="970" y="110" class="text subgraph-title">Encrypted ERC System</text>
+
+  <!-- EncryptedERC -->
+  <rect x="850" y="140" width="150" height="100" rx="10" class="contract-box"/>
+  <text x="925" y="170" class="text title">🔐 EncryptedERC</text>
+  <text x="925" y="190" class="text subtitle">mint/burn tokens</text>
+  <text x="925" y="210" class="text subtitle">encrypted operations</text>
+
+  <!-- Pool Contract -->
+  <rect x="880" y="270" width="150" height="70" rx="10" class="contract-box"/>
+  <text x="955" y="295" class="text title">🏦 Pool Contract</text>
+  <text x="955" y="315" class="text subtitle">Token Management</text>
+
+  <!-- Relayer System Subgraph -->
+  <rect x="450" y="450" width="300" height="180" rx="15" class="subgraph"/>
+  <text x="600" y="480" class="text subgraph-title">Relayer System</text>
+
+  <!-- Relayer Service -->
+  <rect x="500" y="510" width="200" height="80" rx="10" class="relayer-box"/>
+  <text x="600" y="540" class="text title">🔑 Relayer Service</text>
+  <text x="600" y="560" class="text subtitle">Anonymous forwarding</text>
+
+  <!-- Deposit Flow Arrows (Dashed) -->
+
+  <!-- User deposit ERC20 to SimpleHybridPool -->
+  <line x1="260" y1="160" x2="430" y2="160" class="deposit-arrow"/>
+  <text x="345" y="140" class="text label">deposit ERC20</text>
+
+  <!-- SimpleHybridPool depositPool to EncryptedERC -->
+  <line x1="610" y1="170" x2="850" y2="170" class="deposit-arrow"/>
+  <text x="730" y="150" class="text label">depositPool</text>
+
+  <!-- EncryptedERC mint EERC to User (curved path) -->
+  <path d="M 850 200 Q 600 50 260 200" class="deposit-arrow"/>
+  <text x="555" y="70" class="text label">mint EERC tokens</text>
+
+  <!-- Withdraw/Mixer Flow Arrows (Dotted) -->
+
+  <!-- User hybridWithdraw to SimpleHybridPool -->
+  <line x1="190" y1="220" x2="480" y2="240" class="withdraw-arrow"/>
+  <text x="300" y="250" class="text label">hybridWithdraw</text>
+
+  <!-- SimpleHybridPool burn EERC to EncryptedERC -->
+  <line x1="580" y1="190" x2="850" y2="190" class="withdraw-arrow"/>
+  <text x="715" y="210" class="text label">burn EERC</text>
+
+  <!-- SimpleHybridPool transfer ERC20 to Relayer -->
+  <line x1="520" y1="240" x2="580" y2="510" class="withdraw-arrow"/>
+  <text x="480" y="380" class="text label">transfer ERC20</text>
+
+  <!-- Relayer send to new address to User -->
+  <path d="M 500 540 Q 300 400 220 220" class="withdraw-arrow"/>
+  <text x="320" y="350" class="text label">send to new address</text>
+
+  <!-- Legend -->
+  <rect x="50" y="750" width="400" height="150" rx="10" fill="white" stroke="black" stroke-width="2"/>
+  <text x="250" y="780" class="text subgraph-title">Legend</text>
+
+  <line x1="80" y1="810" x2="150" y2="810" class="deposit-arrow"/>
+  <text x="200" y="815" class="text label">Deposit Flow (long dashes)</text>
+
+  <line x1="80" y1="840" x2="150" y2="840" class="withdraw-arrow"/>
+  <text x="200" y="845" class="text label">Withdraw/Mixer Flow (dots)</text>
+
+  <rect x="80" y="860" width="60" height="25" rx="5" class="subgraph"/>
+  <text x="160" y="875" class="text label">System Components</text>
+
+</svg>

@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="900" viewBox="0 0 800 900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+     refX="9" refY="3.5" orient="auto" markerUnits="strokeWidth">
+      <polygon points="0 0, 10 3.5, 0 7" fill="black" stroke="black" stroke-width="1"/>
+    </marker>
+    <style>
+      .box { fill: white; stroke: black; stroke-width: 2; }
+      .text { font-family: Arial, sans-serif; text-anchor: middle; fill: black; }
+      .title { font-size: 12px; font-weight: bold; }
+      .subtitle { font-size: 10px; }
+      .label { font-size: 9px; }
+      .arrow { stroke: black; stroke-width: 1.5; fill: none; marker-end: url(#arrowhead); }
+    </style>
+  </defs>
+  
+  <!-- User A -->
+  <rect x="50" y="50" width="80" height="40" rx="5" class="box"/>
+  <text x="90" y="75" class="text title">User A</text>
+  
+  <!-- User B -->
+  <rect x="50" y="180" width="80" height="40" rx="5" class="box"/>
+  <text x="90" y="205" class="text title">User B</text>
+  
+  <!-- EncryptedERC -->
+  <rect x="300" y="110" width="100" height="50" rx="5" class="box"/>
+  <text x="350" y="130" class="text title">EncryptedERC</text>
+  <text x="350" y="145" class="text subtitle">(Contract)</text>
+  
+  <!-- Voucher A -->
+  <rect x="200" y="50" width="80" height="40" rx="5" class="box"/>
+  <text x="240" y="75" class="text title">Voucher A</text>
+  
+  <!-- Voucher B -->
+  <rect x="200" y="180" width="80" height="40" rx="5" class="box"/>
+  <text x="240" y="205" class="text title">Voucher B</text>
+  
+  <!-- EPool -->
+  <rect x="300" y="280" width="100" height="50" rx="5" class="box"/>
+  <text x="350" y="300" class="text title">EPool</text>
+  <text x="350" y="315" class="text subtitle">(Contract)</text>
+  
+  <!-- Relayer -->
+  <rect x="500" y="350" width="80" height="40" rx="5" class="box"/>
+  <text x="540" y="375" class="text title">Relayer</text>
+  
+  <!-- Decision Diamond -->
+  <polygon points="540,450 580,480 540,510 500,480" class="box"/>
+  <text x="540" y="475" class="text label" font-weight="bold">Amounts</text>
+  <text x="540" y="485" class="text label" font-weight="bold">Match?</text>
+  
+  <!-- Execute Swap -->
+  <rect x="600" y="560" width="80" height="50" rx="5" class="box"/>
+  <text x="640" y="580" class="text subtitle" font-weight="bold">Execute</text>
+  <text x="640" y="595" class="text subtitle" font-weight="bold">swapVouchers</text>
+  
+  <!-- Reject Swap -->
+  <rect x="400" y="560" width="80" height="50" rx="5" class="box"/>
+  <text x="440" y="580" class="text subtitle" font-weight="bold">Reject</text>
+  <text x="440" y="595" class="text subtitle" font-weight="bold">Swap</text>
+  
+  <!-- User A receives Token B -->
+  <rect x="250" y="700" width="100" height="50" rx="5" class="box"/>
+  <text x="300" y="720" class="text subtitle" font-weight="bold">User A receives</text>
+  <text x="300" y="735" class="text subtitle" font-weight="bold">Token B</text>
+  
+  <!-- User B receives Token A -->
+  <rect x="400" y="700" width="100" height="50" rx="5" class="box"/>
+  <text x="450" y="720" class="text subtitle" font-weight="bold">User B receives</text>
+  <text x="450" y="735" class="text subtitle" font-weight="bold">Token A</text>
+  
+  <!-- Arrows with Labels -->
+  
+  <!-- User A to EncryptedERC -->
+  <line x1="130" y1="70" x2="300" y2="130" class="arrow"/>
+  <text x="210" y="90" class="text label">burnToVoucher</text>
+  
+  <!-- User A gets Voucher A -->
+  <line x1="130" y1="70" x2="200" y2="70" class="arrow"/>
+  <text x="155" y="60" class="text label">gets</text>
+  
+  <!-- User B to EncryptedERC -->
+  <line x1="130" y1="200" x2="300" y2="140" class="arrow"/>
+  <text x="210" y="185" class="text label">burnToVoucher</text>
+  
+  <!-- User B gets Voucher B -->
+  <line x1="130" y1="200" x2="200" y2="200" class="arrow"/>
+  <text x="155" y="210" class="text label">gets</text>
+  
+  <!-- Voucher A to EPool -->
+  <line x1="240" y1="90" x2="320" y2="280" class="arrow"/>
+  <text x="250" y="170" class="text label">depositVoucher</text>
+  
+  <!-- Voucher B to EPool -->
+  <line x1="240" y1="220" x2="320" y2="280" class="arrow"/>
+  <text x="270" y="265" class="text label">depositVoucher</text>
+  
+  <!-- EPool notifies Relayer -->
+  <line x1="400" y1="305" x2="500" y2="365" class="arrow"/>
+  <text x="440" y="325" class="text label">notifies</text>
+  
+  <!-- Relayer getPCT to EncryptedERC -->
+  <line x1="520" y1="360" x2="380" y2="150" class="arrow"/>
+  <text x="460" y="240" class="text label">getPCT</text>
+  
+  <!-- EncryptedERC encrypted data to Relayer -->
+  <line x1="400" y1="135" x2="500" y2="380" class="arrow"/>
+  <text x="440" y="275" class="text label">encrypted data</text>
+  
+  <!-- Relayer decrypts & verifies to Decision -->
+  <line x1="540" y1="390" x2="540" y2="450" class="arrow"/>
+  <text x="470" y="415" class="text label">decrypts &amp;</text>
+  <text x="470" y="427" class="text label">verifies</text>
+  
+  <!-- Decision Yes to Execute -->
+  <line x1="570" y1="490" x2="620" y2="560" class="arrow"/>
+  <text x="600" y="520" class="text label" font-weight="bold">Yes</text>
+  
+  <!-- Decision No to Reject -->
+  <line x1="510" y1="490" x2="460" y2="560" class="arrow"/>
+  <text x="460" y="520" class="text label" font-weight="bold">No</text>
+  
+  <!-- Execute calls EPool -->
+  <line x1="620" y1="585" x2="380" y2="315" class="arrow"/>
+  <text x="510" y="440" class="text label">calls</text>
+  
+  <!-- EPool claimVoucher to User A receives Token B -->
+  <line x1="340" y1="330" x2="300" y2="700" class="arrow"/>
+  <text x="260" y="500" class="text label">claimVoucher</text>
+  
+  <!-- EPool claimVoucher to User B receives Token A -->
+  <line x1="360" y1="330" x2="450" y2="700" class="arrow"/>
+  <text x="430" y="500" class="text label">claimVoucher</text>
+  
+</svg>
