@@ -7,6 +7,7 @@
 Lunarys delivers a privacy-first automated market maker that blends public USDC liquidity with fully homomorphic encrypted balances. This monorepo packages every layer—smart contracts, relayer workflow, frontend UX, and test automation—so teams can stand up a confidential swap environment end to end.
 
 ---
+## Full docs page [here](https://privacy-pool-monorepo-docs.vercel.app/docs/intro)
 
 ## Table of Contents
 - [Project Overview](#project-overview)
