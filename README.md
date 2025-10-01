@@ -8,6 +8,7 @@ Lunarys delivers a privacy-first automated market maker that blends public USDC 
 
 ---
 ## Full docs page [here](https://privacy-pool-monorepo-docs.vercel.app/docs/intro)
+https://privacy-pool-monorepo-docs.vercel.app/docs/intro
 
 ## Table of Contents
 - [Project Overview](#project-overview)
